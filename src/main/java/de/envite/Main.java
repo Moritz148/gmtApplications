@@ -4,6 +4,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.Topology;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -21,8 +22,11 @@ public class Main implements CommandLineRunner {
         context.close();
     }
 
-    int numberOfInstances = 500;
-    private ZeebeClient zeebeClient;
+        private ZeebeClient zeebeClient;
+
+    @Value("${my.custom.var:100}")
+    private int myVar;
+
 
     public Main(ZeebeClient zeebeClient) {
         this.zeebeClient = zeebeClient;
@@ -34,6 +38,8 @@ public class Main implements CommandLineRunner {
             System.out.println("Zeebe Client not set");
             return;
         }
+
+        int numberOfInstances = myVar;
 
         getTopology();
 
@@ -88,7 +94,7 @@ public class Main implements CommandLineRunner {
                 .send()
                 .join();
 
-        if(instance==numberOfInstances){
+        if(instance==myVar){
             Instant end = Instant.now();
             long endMicros = end.getEpochSecond() * 1_000_000L + end.getNano() / 1_000;
 //            String timestampEnded = LocalDateTime.now().format(formatter);
