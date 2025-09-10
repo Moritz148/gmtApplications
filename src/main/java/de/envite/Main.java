@@ -11,8 +11,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 @SpringBootApplication
 public class Main implements CommandLineRunner {
@@ -24,8 +22,8 @@ public class Main implements CommandLineRunner {
 
         private ZeebeClient zeebeClient;
 
-    @Value("${my.custom.var:100}")
-    private int myVar;
+    @Value("${process.instances:100}")
+    private int processInstances;
 
 
     public Main(ZeebeClient zeebeClient) {
@@ -39,24 +37,25 @@ public class Main implements CommandLineRunner {
             return;
         }
 
-        int numberOfInstances = myVar;
+        int numberOfInstances = processInstances;
 
         getTopology();
 
-        String c8benchmark_classpath = "C8_benchmark.bpmn";
+        String processClasspath = "C8_single.bpmn";
 
-        deployBPMN(c8benchmark_classpath);
+        deployBPMN(processClasspath);
 
-        String c8benchmark_processId = "C8_benchmark";
+        String processId = "C8_single";
 
         for (int i = 1; i <= numberOfInstances; i++) {
 
-            startInstance(c8benchmark_processId, i);
+            startInstance(processId, i);
 
         }
     }
 
     private void getTopology(){
+
         final Topology topology = zeebeClient.newTopologyRequest().send().join();
 
         System.out.println("Topology: ");
@@ -69,21 +68,19 @@ public class Main implements CommandLineRunner {
     }
 
     private void deployBPMN(String classpath){
+
         zeebeClient.newDeployResourceCommand()
                 .addResourceFromClasspath(classpath)
                 .send()
                 .join();
-
-        System.out.println("Deployed BPMN!");
+        System.out.printf("Deployed BPMN %s\n", classpath);
     }
 
     private void startInstance(String processId, int instance){
-//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+
         if(instance==1){
             Instant start = Instant.now();
             long startMicros = start.getEpochSecond() * 1_000_000L + start.getNano() / 1_000;
-//            String timestampStarted = LocalDateTime.now().format(formatter);
-//            System.out.println("Instance #" + instance + " STARTED - " + timestampStarted);
             System.out.println("Instance #" + instance + " STARTED - " + startMicros);
         }
 
@@ -94,11 +91,9 @@ public class Main implements CommandLineRunner {
                 .send()
                 .join();
 
-        if(instance==myVar){
+        if(instance==processInstances){
             Instant end = Instant.now();
             long endMicros = end.getEpochSecond() * 1_000_000L + end.getNano() / 1_000;
-//            String timestampEnded = LocalDateTime.now().format(formatter);
-//            System.out.println("Instance #" + instance + " DONE - " + timestampEnded);
             System.out.println("Instance #" + instance + " ENDED - " + endMicros);
         }
     }
