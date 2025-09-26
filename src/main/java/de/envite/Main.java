@@ -41,7 +41,7 @@ public class Main implements CommandLineRunner {
 
         getTopology();
 
-        String processClasspath = "C8_single.bpmn";
+        String processClasspath = "C8_single" + ".bpmn";
 
         deployBPMN(processClasspath);
 
@@ -68,7 +68,7 @@ public class Main implements CommandLineRunner {
     }
 
     private void deployBPMN(String classpath){
-
+        zeebeClient.getConfiguration();
         zeebeClient.newDeployResourceCommand()
                 .addResourceFromClasspath(classpath)
                 .send()
@@ -80,22 +80,25 @@ public class Main implements CommandLineRunner {
 
         if(instance==1){
             Instant start = Instant.now();
-            long startMicros = start.getEpochSecond() * 1_000_000L + start.getNano() / 1_000;
+            long startMicros = getMicros(start);
             System.out.println("Instance #" + instance + " STARTED - " + startMicros);
         }
 
         zeebeClient.newCreateInstanceCommand()
                 .bpmnProcessId(processId)
                 .latestVersion()
-                .withResult()
                 .send()
                 .join();
 
         if(instance==processInstances){
             Instant end = Instant.now();
-            long endMicros = end.getEpochSecond() * 1_000_000L + end.getNano() / 1_000;
+            long endMicros = getMicros(end);
             System.out.println("Instance #" + instance + " ENDED - " + endMicros);
         }
+    }
+
+    private static long getMicros(Instant time) {
+        return time.getEpochSecond() * 1_000_000L + time.getNano() / 1_000;
     }
 
 }
