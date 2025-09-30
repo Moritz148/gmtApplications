@@ -1,3 +1,14 @@
-mo:
-  may-fancy-namespace:
-    my-vlue: ${AFFENTANZ}
+#mo:
+#  may-fancy-namespace:
+#    my-vlue: ${AFFENTANZ}
+
+experiment:
+  process-instances:
+    amount: ${PROCESS_INSTANCES}
+  process-name: ${PROCESS_NAME}
+
+
+logging:
+  level:
+    root: off
+
