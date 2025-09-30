@@ -4,11 +4,10 @@
 
 experiment:
   process-instances:
-    amount: ${PROCESS_INSTANCES}
-  process-name: ${PROCESS_NAME}
+    amount: ${PROCESS_INSTANCES:100}
+  process-name: ${PROCESS_NAME:C8_benchmark}
 
 
 logging:
   level:
     root: off
-

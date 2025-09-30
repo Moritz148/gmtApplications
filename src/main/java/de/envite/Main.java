@@ -3,6 +3,7 @@ package de.envite;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.client.api.response.Topology;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +14,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @SpringBootApplication
 public class Main implements CommandLineRunner {
@@ -63,8 +67,12 @@ public class Main implements CommandLineRunner {
         while (instancesCreating <= numberOfInstances){
             startInstance(processName, instancesCreating);
             instancesCreating++;
+
+
+
         }
 
+//        zeebeClient.newCreateInstanceCommand().bpmnProcessId(processName).latestVersion().send().join();
         Instant end = Instant.now();
         long endMicros = getMicros(end);
         System.out.println("Instance #" + instancesCreating + " ENDED - " + endMicros);
@@ -100,12 +108,18 @@ public class Main implements CommandLineRunner {
 //            long startMicros = getMicros(start);
 //            System.out.println("Instance #" + instance + " STARTED - " + startMicros);
 //        }
+        List<CompletableFuture<ProcessInstanceResult>> futures = new ArrayList<>();
 
-        ZeebeFuture<ProcessInstanceEvent> future =
+        CompletableFuture<ProcessInstanceResult> future =
                 zeebeClient.newCreateInstanceCommand()
                         .bpmnProcessId(id)
                         .latestVersion()
-                        .send();
+                        .withResult()
+                        .send()
+                        .toCompletableFuture();
+
+        futures.add(future);
+
 
 //        zeebeClient.newCreateInstanceCommand()
 //                .bpmnProcessId(processId)
