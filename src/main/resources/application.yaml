@@ -1,3 +1,7 @@
 mo:
   may-fancy-namespace:
     my-vlue: ${AFFENTANZ}
+camunda:
+  client:
+    zeebe:
+      grpc-address: http://localhost:26500

@@ -22,7 +22,7 @@ public class Main implements CommandLineRunner {
 
         private ZeebeClient zeebeClient;
 
-    @Value("${process.instances:100}")
+    @Value("${process.instances:50}")
     private int processInstances;
 
 
@@ -41,17 +41,23 @@ public class Main implements CommandLineRunner {
 
         getTopology();
 
-        String processClasspath = "C8_single" + ".bpmn";
+        String processClasspath = "C8_benchmark" + ".bpmn";
 
         deployBPMN(processClasspath);
 
-        String processId = "C8_single";
+        String processId = "C8_benchmark";
 
+//        zeebeClient.newCreateInstanceCommand()
+//                .bpmnProcessId(processId)
+//                .latestVersion()
+//                .variable("instances", numberOfInstances)
+//                .send();
         for (int i = 1; i <= numberOfInstances; i++) {
 
             startInstance(processId, i);
 
         }
+        Thread.sleep(20000);
     }
 
     private void getTopology(){
@@ -87,6 +93,7 @@ public class Main implements CommandLineRunner {
         zeebeClient.newCreateInstanceCommand()
                 .bpmnProcessId(processId)
                 .latestVersion()
+                .withResult()
                 .send()
                 .join();
 
