@@ -5,3 +5,12 @@ camunda:
   client:
     zeebe:
       grpc-address: http://localhost:26500
+
+server:
+  port: 7070
+  #ZEEBE_CLIENT_SECURITY_PLAINTEXT=true
+
+zeebe:
+  client:
+    security:
+      plaintext: true

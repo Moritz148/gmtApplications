@@ -1,7 +1,11 @@
 package de.envite;
 
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.spring.client.annotation.JobWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,16 +15,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import java.time.Instant;
+import java.util.concurrent.Future;
 
 @SpringBootApplication
 public class Main implements CommandLineRunner {
     private final static Logger log = LoggerFactory.getLogger(Main.class);
     public static void main(String[] args) {
         ConfigurableApplicationContext context = SpringApplication.run(Main.class, args);
-        context.close();
+//        context.close();
     }
 
-        private ZeebeClient zeebeClient;
+    final private ZeebeClient zeebeClient;
 
     @Value("${process.instances:50}")
     private int processInstances;
@@ -41,23 +46,19 @@ public class Main implements CommandLineRunner {
 
         getTopology();
 
-        String processClasspath = "C8_benchmark" + ".bpmn";
+        String processClasspath = "C8_benchmark_parallel" + ".bpmn";
 
         deployBPMN(processClasspath);
 
-        String processId = "C8_benchmark";
+        String processId = "C8_benchmark_parallel";
 
-//        zeebeClient.newCreateInstanceCommand()
-//                .bpmnProcessId(processId)
-//                .latestVersion()
-//                .variable("instances", numberOfInstances)
-//                .send();
-        for (int i = 1; i <= numberOfInstances; i++) {
+        zeebeClient.newCreateInstanceCommand()
+                .bpmnProcessId(processId)
+                .latestVersion()
+                .variable("instances", numberOfInstances)
+                .send();
 
-            startInstance(processId, i);
 
-        }
-        Thread.sleep(20000);
     }
 
     private void getTopology(){

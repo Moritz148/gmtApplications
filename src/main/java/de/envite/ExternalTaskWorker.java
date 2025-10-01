@@ -1,5 +1,6 @@
 package de.envite;
 
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.annotation.JobWorker;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -9,8 +10,13 @@ import java.time.Instant;
 @Component
 public class ExternalTaskWorker {
 
-    @Value("${process.instances:100}")
+    private final ZeebeClient zeebeClient;
+    @Value("${process.instances:50}")
     private int processInstances;
+
+    public ExternalTaskWorker(ZeebeClient zeebeClient) {
+        this.zeebeClient = zeebeClient;
+    }
 
     private static long getMicros(Instant time) {
         return time.getEpochSecond() * 1_000_000L + time.getNano() / 1_000;
@@ -127,12 +133,15 @@ public class ExternalTaskWorker {
 //    public void dummyWorker24() {
 ////        LOG.info("dummyWorker10  ---  Done");
 //    }
-@JobWorker (type = "logend")
-public void logend() {
-    Instant end = Instant.now();
-    long endMicros = getMicros(end);
-    System.out.println("Instance #" + processInstances + " ENDED - " + endMicros);
-}
+    @JobWorker(type = "logend")
+    public void logend() {
+        Instant end = Instant.now();
+        long endMicros = getMicros(end);
+        System.out.println("Instance #" + processInstances + " ENDED - " + endMicros);
+        zeebeClient.close();
+
+    //
+    }
 }
 
 
