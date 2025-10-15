@@ -1,7 +1,13 @@
 mo:
   may-fancy-namespace:
     my-vlue: ${AFFENTANZ}
+
 camunda:
   client:
-    zeebe:
-      grpc-address: http://localhost:26500
+    mode: self-managed
+    grpc-address: http://orchestratrion:26500
+    rest-address: http://orchestration:8080
+    worker:
+      defaults:
+        stream-enabled: true
+    request-timeout: PT0.1S

@@ -1,47 +1,84 @@
 package de.envite;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.Topology;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.annotation.Deployment;
+import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.response.Topology;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
+import java.io.IOException;
 import java.time.Instant;
 
 @SpringBootApplication
+@Deployment(resources = "classpath:C8_benchmark.bpmn")
 public class Main implements CommandLineRunner {
-    private final static Logger log = LoggerFactory.getLogger(Main.class);
+    //    private final static Logger log = LoggerFactory.getLogger(Main.class);
     public static void main(String[] args) {
         ConfigurableApplicationContext context = SpringApplication.run(Main.class, args);
         context.close();
     }
 
-        private ZeebeClient zeebeClient;
+    @Autowired
+    private CamundaClient client;
 
-    @Value("${process.instances:50}")
-    private int processInstances;
-
-
-    public Main(ZeebeClient zeebeClient) {
-        this.zeebeClient = zeebeClient;
-    }
+    int amountProcessInstances = 250;
 
     @Override
     public void run(String... args) throws Exception {
-        if(zeebeClient == null) {
+        if (client == null) {
             System.out.println("Zeebe Client not set");
             return;
         }
 
-        int numberOfInstances = processInstances;
-
         getTopology();
 
-        String processClasspath = "C8_benchmark" + ".bpmn";
+        Thread.sleep(5000);
+//        int size = 0;
+        for (int i = 1; i <= amountProcessInstances; i++) {
+            ProcessInstanceEvent processInstanceEvent = client.newCreateInstanceCommand()
+                    .bpmnProcessId("C8_benchmark")
+                    .latestVersion()
+                    .send()
+                    .join();
+//            long process_instance_key = processInstanceEvent.getProcessInstanceKey();
+            System.out.println("Instance successfully created");
+        }
+        boolean x = true;
+        while (x) {
+            var response = client.newProcessInstanceSearchRequest().filter((f) -> f.processDefinitionId("C8_benchmark").state(ProcessInstanceState.COMPLETED))
+                    .page((p) -> p.limit(amountProcessInstances))
+                    .send();
+            var result = response.join();
+            int size = result.items().size();
+            if (size == amountProcessInstances) {
+                System.out.println("Erledigte Instanzen: " + size);
+                System.out.println("ALle Instanzen erledigt.");
+                x = false;
+                client.close();
+                System.exit(0);
+            }
+            System.out.println("ANZAHL: " + size);
+            Thread.sleep(1000);
+        }
+
+
+//        Optional<Instant> earliestStartDate = result.items().stream().map(p -> p.getStartDate().toInstant()).min(Comparator.comparingLong(Instant::toEpochMilli));
+//        Optional<Instant> latestEndDate = result.items().stream().map(p -> p.getEndDate().toInstant()).max(Comparator.comparingLong(Instant::toEpochMilli));
+
+//        System.out.println(">>> Earliest Start Date = " + earliestStartDate.get().toString() );
+//        System.out.println(">>> Latest End Date = " + latestEndDate.get().toString() );
+
+
+//        System.out.println("Found "+  result.items().size() + " Instances");
+
+
+
+        /*String processClasspath = "C8_benchmark" + ".bpmn";
 
         deployBPMN(processClasspath);
 
@@ -57,12 +94,13 @@ public class Main implements CommandLineRunner {
             startInstance(processId, i);
 
         }
-        Thread.sleep(20000);
+*/
+//        Thread.sleep(20000);
     }
 
-    private void getTopology(){
+    private void getTopology() throws IOException {
 
-        final Topology topology = zeebeClient.newTopologyRequest().send().join();
+        final Topology topology = client.newTopologyRequest().send().join();
 
         System.out.println("Topology: ");
         topology.getBrokers()
@@ -71,9 +109,23 @@ public class Main implements CommandLineRunner {
                     b.getPartitions()
                             .forEach(p -> System.out.println("     " + p.getPartitionId() + " - " + p.getRole()));
                 });
+        System.out.println();
+       /* OkHttpClient client = new OkHttpClient().newBuilder()
+                .build();
+        MediaType mediaType = MediaType.parse("text/plain");
+        RequestBody body = RequestBody.create(mediaType, "");
+        Request request = new Request.Builder()
+                .url("http://localhost:8088/v2/topology")
+                .get()
+                .addHeader("Accept", "application/json")
+                .build();
+        Response response = client.newCall(request).execute();
+        String response_body = response.body().string();
+        JSONObject json = new JSONObject(response_body);
+        System.out.println(json.toString(2));*/
     }
 
-    private void deployBPMN(String classpath){
+    /*private void deployBPMN(String classpath){
         zeebeClient.getConfiguration();
         zeebeClient.newDeployResourceCommand()
                 .addResourceFromClasspath(classpath)
@@ -102,7 +154,7 @@ public class Main implements CommandLineRunner {
             long endMicros = getMicros(end);
             System.out.println("Instance #" + instance + " ENDED - " + endMicros);
         }
-    }
+    }*/
 
     private static long getMicros(Instant time) {
         return time.getEpochSecond() * 1_000_000L + time.getNano() / 1_000;

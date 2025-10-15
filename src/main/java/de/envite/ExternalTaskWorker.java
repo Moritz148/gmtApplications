@@ -1,6 +1,6 @@
 package de.envite;
 
-import io.camunda.zeebe.spring.client.annotation.JobWorker;
+import io.camunda.client.annotation.JobWorker;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -15,61 +15,74 @@ public class ExternalTaskWorker {
     private static long getMicros(Instant time) {
         return time.getEpochSecond() * 1_000_000L + time.getNano() / 1_000;
     }
-    @JobWorker(type = "logstart")
-    public void logstart() {
-        Instant start = Instant.now();
-        long startMicros = getMicros(start);
-        System.out.println("Instance #1 STARTED - " + startMicros);
-    }
+
 
     @JobWorker(type = "testing1")
     public void dummyWorker1() {
 //        LOG.info("dummyWorker1  ---  Done");
+        System.out.println("Testing 1 erledigt");
     }
 
     @JobWorker(type = "testing2")
     public void dummyWorker2() {
 //        LOG.info("dummyWorker2  ---  Done");
+        System.out.println("Testing 2 erledigt");
+
     }
 
     @JobWorker(type = "testing3")
     public void dummyWorker3() {
 //        LOG.info("dummyWorker3  ---  Done");
+        System.out.println("Testing 3 erledigt");
+
     }
 
     @JobWorker(type = "testing4")
     public void dummyWorker4() {
 //        LOG.info("dummyWorker4  ---  Done");
+        System.out.println("Testing 4 erledigt");
+
     }
 
     @JobWorker(type = "testing5")
     public void dummyWorker5() {
 //        LOG.info("dummyWorker5  ---  Done");
+        System.out.println("Testing 5 erledigt");
+
     }
 
     @JobWorker(type = "testing6")
     public void dummyWorker6() {
 //        LOG.info("dummyWorker6  ---  Done");
+        System.out.println("Testing 6 erledigt");
+
     }
 
     @JobWorker(type = "testing7")
     public void dummyWorker7() {
 //        LOG.info("dummyWorker7  ---  Done");
+        System.out.println("Testing 7 erledigt");
+
     }
 
     @JobWorker(type = "testing8")
     public void dummyWorker8() {
 //        LOG.info("dummyWorker8 ---  Done");
+        System.out.println("Testing 8 erledigt");
+
     }
 
     @JobWorker(type = "testing9")
     public void dummyWorker9() {
 //        LOG.info("dummyWorker9  ---  Done");
+        System.out.println("Testing 9 erledigt");
+
     }
 
     @JobWorker(type = "testing10")
     public void dummyWorker10() {
 //        LOG.info("dummyWorker10  ---  Done");
+        System.out.println("Testing 10 erledigt");
     }
 //    @JobWorker(type = "testing11")
 //    public void dummyWorker11() {
@@ -127,12 +140,7 @@ public class ExternalTaskWorker {
 //    public void dummyWorker24() {
 ////        LOG.info("dummyWorker10  ---  Done");
 //    }
-@JobWorker (type = "logend")
-public void logend() {
-    Instant end = Instant.now();
-    long endMicros = getMicros(end);
-    System.out.println("Instance #" + processInstances + " ENDED - " + endMicros);
-}
+
 }
 
 
