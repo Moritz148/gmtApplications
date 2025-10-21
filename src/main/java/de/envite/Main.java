@@ -5,6 +5,7 @@ import io.camunda.client.annotation.Deployment;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.Topology;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.api.search.response.ProcessInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -13,6 +14,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 
 @SpringBootApplication
 @Deployment(resources = "classpath:C8_benchmark.bpmn")
@@ -26,19 +28,18 @@ public class Main implements CommandLineRunner {
     @Autowired
     private CamundaClient client;
 
-    int amountProcessInstances = 250;
+    int amountProcessInstances = 100;
 
     @Override
     public void run(String... args) throws Exception {
         if (client == null) {
-            System.out.println("Zeebe Client not set");
+            System.out.println("Camunda Client not set");
             return;
         }
 
         getTopology();
 
         Thread.sleep(5000);
-//        int size = 0;
         for (int i = 1; i <= amountProcessInstances; i++) {
             ProcessInstanceEvent processInstanceEvent = client.newCreateInstanceCommand()
                     .bpmnProcessId("C8_benchmark")
@@ -46,7 +47,12 @@ public class Main implements CommandLineRunner {
                     .send()
                     .join();
 //            long process_instance_key = processInstanceEvent.getProcessInstanceKey();
-            System.out.println("Instance successfully created");
+
+            if(i==1){
+                Instant start = Instant.now();
+                long startMicros = getMicros(start);
+                System.out.println("Instance #" + i + " STARTED - " + startMicros);
+            }
         }
         boolean x = true;
         while (x) {
@@ -54,16 +60,18 @@ public class Main implements CommandLineRunner {
                     .page((p) -> p.limit(amountProcessInstances))
                     .send();
             var result = response.join();
+
             int size = result.items().size();
             if (size == amountProcessInstances) {
-                System.out.println("Erledigte Instanzen: " + size);
-                System.out.println("ALle Instanzen erledigt.");
+                Instant end = Instant.now();
+                long endMicros = getMicros(end);
+                System.out.println("Instance #" + amountProcessInstances + " ENDED - " + endMicros);
                 x = false;
                 client.close();
                 System.exit(0);
             }
             System.out.println("ANZAHL: " + size);
-            Thread.sleep(1000);
+            Thread.sleep(500);
         }
 
 
