@@ -5,16 +5,14 @@ import io.camunda.client.annotation.Deployment;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.Topology;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.client.api.search.response.ProcessInstance;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
-
 import java.io.IOException;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 
 @SpringBootApplication
 @Deployment(resources = "classpath:C8_benchmark.bpmn")
@@ -28,7 +26,9 @@ public class Main implements CommandLineRunner {
     @Autowired
     private CamundaClient client;
 
-    int amountProcessInstances = 100;
+
+    @Value("${mo.may-fancy-namespace.my-vlue}")
+    int amountProcessInstances;
 
     @Override
     public void run(String... args) throws Exception {
@@ -73,37 +73,6 @@ public class Main implements CommandLineRunner {
             System.out.println("ANZAHL: " + size);
             Thread.sleep(500);
         }
-
-
-//        Optional<Instant> earliestStartDate = result.items().stream().map(p -> p.getStartDate().toInstant()).min(Comparator.comparingLong(Instant::toEpochMilli));
-//        Optional<Instant> latestEndDate = result.items().stream().map(p -> p.getEndDate().toInstant()).max(Comparator.comparingLong(Instant::toEpochMilli));
-
-//        System.out.println(">>> Earliest Start Date = " + earliestStartDate.get().toString() );
-//        System.out.println(">>> Latest End Date = " + latestEndDate.get().toString() );
-
-
-//        System.out.println("Found "+  result.items().size() + " Instances");
-
-
-
-        /*String processClasspath = "C8_benchmark" + ".bpmn";
-
-        deployBPMN(processClasspath);
-
-        String processId = "C8_benchmark";
-
-//        zeebeClient.newCreateInstanceCommand()
-//                .bpmnProcessId(processId)
-//                .latestVersion()
-//                .variable("instances", numberOfInstances)
-//                .send();
-        for (int i = 1; i <= numberOfInstances; i++) {
-
-            startInstance(processId, i);
-
-        }
-*/
-//        Thread.sleep(20000);
     }
 
     private void getTopology() throws IOException {
@@ -118,19 +87,7 @@ public class Main implements CommandLineRunner {
                             .forEach(p -> System.out.println("     " + p.getPartitionId() + " - " + p.getRole()));
                 });
         System.out.println();
-       /* OkHttpClient client = new OkHttpClient().newBuilder()
-                .build();
-        MediaType mediaType = MediaType.parse("text/plain");
-        RequestBody body = RequestBody.create(mediaType, "");
-        Request request = new Request.Builder()
-                .url("http://localhost:8088/v2/topology")
-                .get()
-                .addHeader("Accept", "application/json")
-                .build();
-        Response response = client.newCall(request).execute();
-        String response_body = response.body().string();
-        JSONObject json = new JSONObject(response_body);
-        System.out.println(json.toString(2));*/
+
     }
 
     /*private void deployBPMN(String classpath){

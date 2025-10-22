@@ -1,6 +1,6 @@
 mo:
   may-fancy-namespace:
-    my-vlue: ${AFFENTANZ}
+    my-vlue: ${PROCESS_INSTANCES:100}
 
 camunda:
   client:
