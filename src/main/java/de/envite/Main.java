@@ -26,8 +26,7 @@ public class Main implements CommandLineRunner {
     @Value("${process-instances}")
     int amountProcessInstances;
 
-
-    String processId = "C8_benchmark";
+    String processId = "C8_single";
 
     String processClasspath = processId + ".bpmn";
 
@@ -52,6 +51,9 @@ public class Main implements CommandLineRunner {
                 long startMicros = getMicros(start);
                 System.out.println("Instance #" + i + " STARTED - " + startMicros);
             }
+            if(i==amountProcessInstances){
+                System.out.println("Alle " + amountProcessInstances + " Prozessinstanzen gestartet.");
+            }
         }
         checkInstances();
     }
@@ -59,12 +61,13 @@ public class Main implements CommandLineRunner {
     private void checkInstances() throws InterruptedException {
         boolean x = true;
         while (x) {
-            var response = client.newProcessInstanceSearchRequest().filter((f) -> f.processDefinitionId("C8_benchmark").state(ProcessInstanceState.COMPLETED))
+            var response = client.newProcessInstanceSearchRequest().filter((f) -> f.processDefinitionId(processId).state(ProcessInstanceState.COMPLETED))
                     .page((p) -> p.limit(amountProcessInstances))
                     .send();
             var result = response.join();
 
             int size = result.items().size();
+//            System.out.println("ANZAHL: " + size);
             if (size == amountProcessInstances) {
                 Instant end = Instant.now();
                 long endMicros = getMicros(end);
