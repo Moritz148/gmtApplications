@@ -1,12 +1,10 @@
-mo:
-  may-fancy-namespace:
-    my-vlue: ${PROCESS_INSTANCES:100}
+process-instances: ${PROCESS_INSTANCES:100}
 
 camunda:
   client:
     mode: self-managed
-    grpc-address: http://orchestration:26500
-    rest-address: http://orchestration:8080
+    grpc-address: ${GRPC_ADDRESS:http://localhost:26500}
+    rest-address: ${REST_ADDRESS:http://localhost:8088}
     worker:
       defaults:
         stream-enabled: true
