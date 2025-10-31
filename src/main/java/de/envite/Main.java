@@ -26,7 +26,7 @@ public class Main implements CommandLineRunner {
     @Value("${process-instances}")
     int amountProcessInstances;
 
-    String processId = "C8_single";
+    String processId = "C8_complex-long";
 
     String processClasspath = processId + ".bpmn";
 
@@ -42,19 +42,10 @@ public class Main implements CommandLineRunner {
 
         deployBPMN(processClasspath);
 
-        Thread.sleep(5000);
-        for (int i = 1; i <= amountProcessInstances; i++) {
-            startInstance(processId);
+        Thread.sleep(2500);
 
-            if(i==1){
-                Instant start = Instant.now();
-                long startMicros = getMicros(start);
-                System.out.println("Instance #" + i + " STARTED - " + startMicros);
-            }
-            if(i==amountProcessInstances){
-                System.out.println("Alle " + amountProcessInstances + " Prozessinstanzen gestartet.");
-            }
-        }
+        startInstance(processId);
+
         checkInstances();
     }
 
@@ -67,7 +58,6 @@ public class Main implements CommandLineRunner {
             var result = response.join();
 
             int size = result.items().size();
-//            System.out.println("ANZAHL: " + size);
             if (size == amountProcessInstances) {
                 Instant end = Instant.now();
                 long endMicros = getMicros(end);
@@ -105,11 +95,23 @@ public class Main implements CommandLineRunner {
     }
 
     private void startInstance(String processId){
-        client.newCreateInstanceCommand()
+        for (int i = 1; i <= amountProcessInstances; i++) {
+            client.newCreateInstanceCommand()
                     .bpmnProcessId(processId)
                     .latestVersion()
                     .send()
                     .join();
+            if(i==1){
+                Instant start = Instant.now();
+                long startMicros = getMicros(start);
+                System.out.println("Instance #" + i + " STARTED - " + startMicros);
+            }
+            if(i==amountProcessInstances){
+                System.out.println("Alle " + amountProcessInstances + " Prozessinstanzen gestartet.");
+            }
+//            System.out.println("Started #" + i);
+        }
+
     }
 
     private static long getMicros(Instant time) {
