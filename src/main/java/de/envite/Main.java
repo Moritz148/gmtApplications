@@ -23,12 +23,13 @@ public class Main implements CommandLineRunner {
     @Autowired
     private CamundaClient client;
 
-    @Value("${process-instances}")
+    @Value("${my-app.process-instances}")
     int amountProcessInstances;
 
-    String processId = "C8_complex-long";
+    @Value("${my-app.process-id}")
+    String processId;
 
-    String processClasspath = processId + ".bpmn";
+
 
     @Override
     public void run(String... args) throws Exception {
@@ -36,13 +37,17 @@ public class Main implements CommandLineRunner {
             System.out.println("Camunda Client not set");
             return;
         }
+        Thread.sleep(10000);
+
+        String processClasspath = processId + ".bpmn";
+
         System.out.println("Starting " + amountProcessInstances + " Process Instances");
 
         getTopology();
 
         deployBPMN(processClasspath);
 
-        Thread.sleep(2500);
+        Thread.sleep(5000);
 
         startInstance(processId);
 
@@ -74,19 +79,17 @@ public class Main implements CommandLineRunner {
     private void getTopology() throws IOException {
         Topology topology = client.newTopologyRequest().send().join();
 
-
         System.out.println("Topology: ");
         topology.getBrokers()
                 .forEach(b -> {
                     System.out.println("    " + b.getAddress());
                     b.getPartitions()
-                            .forEach(p -> System.out.println("     " + p.getPartitionId() + " - " + p.getRole()));
+                            .forEach(p -> System.out.println("     " + p.getPartitionId() + " - " + p.getRole() + " - " + p.getHealth()));
                 });
         System.out.println();
     }
 
     private void deployBPMN(String classpath){
-        client.getConfiguration();
         client.newDeployResourceCommand()
                 .addResourceFromClasspath(classpath)
                 .send()
@@ -94,7 +97,7 @@ public class Main implements CommandLineRunner {
         System.out.printf("Deployed BPMN %s\n", classpath);
     }
 
-    private void startInstance(String processId){
+    private void startInstance(String processId) throws InterruptedException {
         for (int i = 1; i <= amountProcessInstances; i++) {
             client.newCreateInstanceCommand()
                     .bpmnProcessId(processId)
@@ -109,7 +112,7 @@ public class Main implements CommandLineRunner {
             if(i==amountProcessInstances){
                 System.out.println("Alle " + amountProcessInstances + " Prozessinstanzen gestartet.");
             }
-//            System.out.println("Started #" + i);
+            Thread.sleep(50);
         }
 
     }

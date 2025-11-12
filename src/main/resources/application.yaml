@@ -1,12 +1,18 @@
-process-instances: ${PROCESS_INSTANCES:100}
+my-app:
+  process-instances: ${PROCESS_INSTANCES:25}
+  process-id: ${PROCESS_ID:benchmark}
 
 camunda:
   client:
     mode: self-managed
     grpc-address: ${GRPC_ADDRESS:http://localhost:26500}
     rest-address: ${REST_ADDRESS:http://localhost:8088}
-    worker:
-      defaults:
-        stream-enabled: true
-        request-timeout: PT0.5S
+#    worker:
+#      defaults:
+#        request-timeout: PT10S
+      #        stream-enabled: true
+      #        request-timeout: PT0.5S
       #request-timeout: PT0.1S
+    prefer-rest-over-grpc: false
+    auth:
+      method: none
