@@ -1,7 +1,22 @@
-mo:
-  may-fancy-namespace:
-    my-vlue: ${AFFENTANZ}
+my-app:
+  process-instances: ${PROCESS_INSTANCES:100}
+  process-id: ${PROCESS_ID:benchmark}
+
 camunda:
   client:
-    zeebe:
-      grpc-address: http://localhost:26500
+    mode: self-managed
+    grpc-address: ${GRPC_ADDRESS:http://localhost:26500}
+    rest-address: ${REST_ADDRESS:http://localhost:8088}
+    prefer-rest-over-grpc: false
+    auth:
+      method: none
+
+spring:
+  main:
+    banner-mode: off
+
+logging:
+  level:
+    de.envite.event: ${LOGGING_LEVEL_APP:info}
+    root: ${LOGGING_LEVEL_ROOT:info}
+
