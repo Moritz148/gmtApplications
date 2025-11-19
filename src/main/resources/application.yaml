@@ -1,5 +1,5 @@
 my-app:
-  process-instances: ${PROCESS_INSTANCES:25}
+  process-instances: ${PROCESS_INSTANCES:100}
   process-id: ${PROCESS_ID:benchmark}
 
 camunda:
@@ -7,12 +7,16 @@ camunda:
     mode: self-managed
     grpc-address: ${GRPC_ADDRESS:http://localhost:26500}
     rest-address: ${REST_ADDRESS:http://localhost:8088}
-#    worker:
-#      defaults:
-#        request-timeout: PT10S
-      #        stream-enabled: true
-      #        request-timeout: PT0.5S
-      #request-timeout: PT0.1S
     prefer-rest-over-grpc: false
     auth:
       method: none
+
+spring:
+  main:
+    banner-mode: off
+
+logging:
+  level:
+    de.envite.event: ${LOGGING_LEVEL_APP:info}
+    root: ${LOGGING_LEVEL_ROOT:info}
+

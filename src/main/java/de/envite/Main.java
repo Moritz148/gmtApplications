@@ -11,6 +11,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import java.io.IOException;
 import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @SpringBootApplication
 public class Main implements CommandLineRunner {
@@ -20,6 +23,8 @@ public class Main implements CommandLineRunner {
         context.close();
     }
 
+//    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
+    private static final Logger LOG_EVENT = LoggerFactory.getLogger("de.envite.event");
     @Autowired
     private CamundaClient client;
 
@@ -37,17 +42,20 @@ public class Main implements CommandLineRunner {
             System.out.println("Camunda Client not set");
             return;
         }
-        Thread.sleep(10000);
-
+        LOG_EVENT.info("EXPERIMENT OHNE WITHRESULT");
         String processClasspath = processId + ".bpmn";
 
-        System.out.println("Starting " + amountProcessInstances + " Process Instances");
+        LOG_EVENT.info("Starting {} process instances", amountProcessInstances);
+
+        LOG_EVENT.info("Waiting for 15 sec...");
+
+        Thread.sleep(15000);
 
         getTopology();
 
         deployBPMN(processClasspath);
 
-        Thread.sleep(5000);
+        Thread.sleep(10000);
 
         startInstance(processId);
 
@@ -64,14 +72,15 @@ public class Main implements CommandLineRunner {
 
             int size = result.items().size();
             if (size == amountProcessInstances) {
-                Instant end = Instant.now();
-                long endMicros = getMicros(end);
-                System.out.println("Instance #" + amountProcessInstances + " ENDED - " + endMicros);
+                LOG_EVENT.debug("Real StartTime: {}", getStartTime(processId));
+                LOG_EVENT.debug("Real EndTime:   {}", getEndTime(processId));
+                LOG_EVENT.info("Dauer: {}", formatDuration(getEndTime(processId), getStartTime(processId)));
                 x = false;
+                Thread.sleep(5000);
                 client.close();
                 System.exit(0);
             }
-            System.out.println("ANZAHL: " + size);
+            LOG_EVENT.info("Anzahl: {}", size);
             Thread.sleep(500);
         }
     }
@@ -79,14 +88,13 @@ public class Main implements CommandLineRunner {
     private void getTopology() throws IOException {
         Topology topology = client.newTopologyRequest().send().join();
 
-        System.out.println("Topology: ");
+        LOG_EVENT.info("Topology:");
         topology.getBrokers()
                 .forEach(b -> {
-                    System.out.println("    " + b.getAddress());
+                    LOG_EVENT.info("  Broker: {}", b.getAddress());
                     b.getPartitions()
-                            .forEach(p -> System.out.println("     " + p.getPartitionId() + " - " + p.getRole() + " - " + p.getHealth()));
+                            .forEach(p -> LOG_EVENT.info("    Partition {} - {} - {}", p.getPartitionId(), p.getRole(), p.getHealth()));
                 });
-        System.out.println();
     }
 
     private void deployBPMN(String classpath){
@@ -94,7 +102,7 @@ public class Main implements CommandLineRunner {
                 .addResourceFromClasspath(classpath)
                 .send()
                 .join();
-        System.out.printf("Deployed BPMN %s\n", classpath);
+        LOG_EVENT.info("Deployed BPMN {}", classpath);
     }
 
     private void startInstance(String processId) throws InterruptedException {
@@ -102,22 +110,64 @@ public class Main implements CommandLineRunner {
             client.newCreateInstanceCommand()
                     .bpmnProcessId(processId)
                     .latestVersion()
+//                    .withResult()
                     .send()
                     .join();
-            if(i==1){
-                Instant start = Instant.now();
-                long startMicros = getMicros(start);
-                System.out.println("Instance #" + i + " STARTED - " + startMicros);
-            }
+
             if(i==amountProcessInstances){
-                System.out.println("Alle " + amountProcessInstances + " Prozessinstanzen gestartet.");
+                LOG_EVENT.info("All {} process instances started", amountProcessInstances);
             }
-            Thread.sleep(50);
+        }
+    }
+
+    private String getStartTime(String processId){
+        var response = client.newProcessInstanceSearchRequest().filter((f) -> f.processDefinitionId(processId))
+                        .page((p) -> p.limit(1))
+                        .sort(s -> s.startDate().asc())
+                        .send();
+        var result = response.join();
+        String start = String.valueOf(result.singleItem().getStartDate());
+        return start;
+    }
+
+    private String getEndTime(String processId){
+        var response = client.newProcessInstanceSearchRequest().filter((f) -> f.processDefinitionId(processId))
+                .page((p) -> p.limit(1))
+                .sort(s -> s.startDate().desc())
+                .send();
+        var result = response.join();
+        String end = String.valueOf(result.singleItem().getEndDate());
+        return end;
+    }
+
+    private String formatDuration(String start, String end) {
+        Instant startTime = Instant.parse(start);
+        Instant endTime = Instant.parse(end);
+
+        long millis = startTime.toEpochMilli() - endTime.toEpochMilli();
+
+        long seconds = millis / 1000;
+        long minutes = seconds / 60;
+        long hours   = minutes / 60;
+
+        long remainingSeconds = seconds % 60;
+        long remainingMinutes = minutes % 60;
+        long remainingMillis  = millis % 1000;
+
+        if (hours > 0) {
+            return String.format("%d h %02d min %02d s %03d ms",
+                    hours, remainingMinutes, remainingSeconds, remainingMillis);
         }
 
+        if (minutes > 0) {
+            return String.format("%d min %02d s %03d ms",
+                    minutes, remainingSeconds, remainingMillis);
+        }
+
+        return String.format("%ds %03dms", remainingSeconds, remainingMillis);
     }
 
-    private static long getMicros(Instant time) {
-        return time.getEpochSecond() * 1_000_000L + time.getNano() / 1_000;
-    }
+//    private static long getMicros(Instant time) {
+//        return time.getEpochSecond() * 1_000_000L + time.getNano() / 1_000;
+//    }
 }
