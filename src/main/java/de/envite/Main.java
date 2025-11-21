@@ -42,7 +42,7 @@ public class Main implements CommandLineRunner {
             System.out.println("Camunda Client not set");
             return;
         }
-        LOG_EVENT.info("EXPERIMENT OHNE WITHRESULT");
+        LOG_EVENT.info("EXPERIMENT PARALLEL");
         String processClasspath = processId + ".bpmn";
 
         LOG_EVENT.info("Starting {} process instances", amountProcessInstances);
