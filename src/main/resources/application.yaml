@@ -1,5 +1,5 @@
 my-app:
-  process-instances: ${PROCESS_INSTANCES:100}
+  process-instances: ${PROCESS_INSTANCES:70}
   process-id: ${PROCESS_ID:benchmark}
 
 camunda:
