@@ -42,14 +42,14 @@ public class Main implements CommandLineRunner {
             System.out.println("Camunda Client not set");
             return;
         }
-        LOG_EVENT.info("EXPERIMENT SEQUENTIELL");
+        LOG_EVENT.info("EXPERIMENT PARALLEL");
         String processClasspath = processId + ".bpmn";
 
         LOG_EVENT.info("Starting {} process instances", amountProcessInstances);
 
-//        LOG_EVENT.info("Waiting for 15 sec...");
-//
-//        Thread.sleep(15000);
+        LOG_EVENT.info("Waiting for 15 sec...");
+
+        Thread.sleep(15000);
 
         getTopology();
 
@@ -131,7 +131,7 @@ public class Main implements CommandLineRunner {
     }
 
     private String getEndTime(String processId){
-        var response = client.newProcessInstanceSearchRequest().filter((f) -> f.processDefinitionId(processId).state(ProcessInstanceState.COMPLETED))
+        var response = client.newProcessInstanceSearchRequest().filter((f) -> f.processDefinitionId(processId))
                 .page((p) -> p.limit(1))
                 .sort(s -> s.startDate().desc())
                 .send();
@@ -144,12 +144,27 @@ public class Main implements CommandLineRunner {
         Instant startTime = Instant.parse(start);
         Instant endTime = Instant.parse(end);
 
-        long millis = startTime.toEpochMilli() - endTime.toEpochMilli(); // End - Start
+        long millis = startTime.toEpochMilli() - endTime.toEpochMilli();
 
-        double secondsWithMillis = millis / 1000.0;
+        long seconds = millis / 1000;
+        long minutes = seconds / 60;
+        long hours   = minutes / 60;
 
-        // Optional: nur 3 Nachkommastellen
-        return String.format("%.3f s", secondsWithMillis);
+        long remainingSeconds = seconds % 60;
+        long remainingMinutes = minutes % 60;
+        long remainingMillis  = millis % 1000;
+
+        if (hours > 0) {
+            return String.format("%d h %02d min %02d s %03d ms",
+                    hours, remainingMinutes, remainingSeconds, remainingMillis);
+        }
+
+        if (minutes > 0) {
+            return String.format("%d min %02d s %03d ms",
+                    minutes, remainingSeconds, remainingMillis);
+        }
+
+        return String.format("%ds %03dms", remainingSeconds, remainingMillis);
     }
 
 //    private static long getMicros(Instant time) {
