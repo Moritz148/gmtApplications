@@ -131,7 +131,7 @@ public class Main implements CommandLineRunner {
     }
 
     private String getEndTime(String processId){
-        var response = client.newProcessInstanceSearchRequest().filter((f) -> f.processDefinitionId(processId))
+        var response = client.newProcessInstanceSearchRequest().filter((f) -> f.processDefinitionId(processId).state(ProcessInstanceState.COMPLETED))
                 .page((p) -> p.limit(1))
                 .sort(s -> s.startDate().desc())
                 .send();
@@ -146,25 +146,10 @@ public class Main implements CommandLineRunner {
 
         long millis = startTime.toEpochMilli() - endTime.toEpochMilli();
 
-        long seconds = millis / 1000;
-        long minutes = seconds / 60;
-        long hours   = minutes / 60;
+        double secondsWithMillis = millis / 1000.0;
 
-        long remainingSeconds = seconds % 60;
-        long remainingMinutes = minutes % 60;
-        long remainingMillis  = millis % 1000;
-
-        if (hours > 0) {
-            return String.format("%d h %02d min %02d s %03d ms",
-                    hours, remainingMinutes, remainingSeconds, remainingMillis);
-        }
-
-        if (minutes > 0) {
-            return String.format("%d min %02d s %03d ms",
-                    minutes, remainingSeconds, remainingMillis);
-        }
-
-        return String.format("%ds %03dms", remainingSeconds, remainingMillis);
+        // Optional: nur 3 Nachkommastellen
+        return String.format("%.3f s", secondsWithMillis);
     }
 
 //    private static long getMicros(Instant time) {
