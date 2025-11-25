@@ -42,7 +42,7 @@ public class Main implements CommandLineRunner {
             System.out.println("Camunda Client not set");
             return;
         }
-        LOG_EVENT.info("EXPERIMENT PARALLEL");
+        LOG_EVENT.info("EXPERIMENT SEQUENTIELL");
         String processClasspath = processId + ".bpmn";
 
         LOG_EVENT.info("Starting {} process instances", amountProcessInstances);
@@ -72,9 +72,11 @@ public class Main implements CommandLineRunner {
 
             int size = result.items().size();
             if (size == amountProcessInstances) {
-                LOG_EVENT.info("Real StartTime: {}", getStartTime(processId));
-                LOG_EVENT.info("Real EndTime:   {}", getEndTime(processId));
-                LOG_EVENT.info("Dauer: {}", formatDuration(getEndTime(processId), getStartTime(processId)));
+                String start = getStartTime(processId);
+                String end = getEndTime(processId);
+                LOG_EVENT.info("Real StartTime: {}", start);
+                LOG_EVENT.info("Real EndTime:   {}", end);
+                LOG_EVENT.info("Dauer: {}", formatDuration(end, start));
                 x = false;
                 Thread.sleep(5000);
                 client.close();
@@ -110,7 +112,7 @@ public class Main implements CommandLineRunner {
             client.newCreateInstanceCommand()
                     .bpmnProcessId(processId)
                     .latestVersion()
-//                    .withResult()
+                    .withResult()
                     .send()
                     .join();
 
