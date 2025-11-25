@@ -72,8 +72,8 @@ public class Main implements CommandLineRunner {
 
             int size = result.items().size();
             if (size == amountProcessInstances) {
-                LOG_EVENT.debug("Real StartTime: {}", getStartTime(processId));
-                LOG_EVENT.debug("Real EndTime:   {}", getEndTime(processId));
+                LOG_EVENT.info("Real StartTime: {}", getStartTime(processId));
+                LOG_EVENT.info("Real EndTime:   {}", getEndTime(processId));
                 LOG_EVENT.info("Dauer: {}", formatDuration(getEndTime(processId), getStartTime(processId)));
                 x = false;
                 Thread.sleep(5000);
