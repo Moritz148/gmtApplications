@@ -42,20 +42,21 @@ public class Main implements CommandLineRunner {
             System.out.println("Camunda Client not set");
             return;
         }
-        LOG_EVENT.info("EXPERIMENT SEQUENTIELL");
+        LOG_EVENT.info("EXPERIMENT PARALLEL");
         String processClasspath = processId + ".bpmn";
 
         LOG_EVENT.info("Starting {} process instances", amountProcessInstances);
 
-        LOG_EVENT.info("Waiting for 15 sec...");
+        int wait = 10000; //ms
+        LOG_EVENT.info("Waiting for " + (wait/1000) + "sec...");
 
-        Thread.sleep(15000);
+        Thread.sleep(wait);
 
         getTopology();
 
         deployBPMN(processClasspath);
 
-        Thread.sleep(10000);
+        Thread.sleep(wait);
 
         startInstance(processId);
 
@@ -72,11 +73,21 @@ public class Main implements CommandLineRunner {
 
             int size = result.items().size();
             if (size == amountProcessInstances) {
-                String start = getStartTime(processId);
-                String end = getEndTime(processId);
+
+                Instant start = Instant.parse(getStartTime(processId));
+                Instant end = Instant.parse(getEndTime(processId));
+
+                long startMicros = getMicros(start);
+                long endMicros = getMicros(end);
+
+                double durationSeconds = (endMicros - startMicros) / 1000000.0;
+
                 LOG_EVENT.info("Real StartTime: {}", start);
+                LOG_EVENT.info("START:  {}", startMicros);
                 LOG_EVENT.info("Real EndTime:   {}", end);
-                LOG_EVENT.info("Dauer: {}", formatDuration(end, start));
+                LOG_EVENT.info("END:  {}", endMicros);
+                LOG_EVENT.info("DAUER: {}", durationSeconds);
+
                 x = false;
                 Thread.sleep(5000);
                 client.close();
@@ -112,7 +123,7 @@ public class Main implements CommandLineRunner {
             client.newCreateInstanceCommand()
                     .bpmnProcessId(processId)
                     .latestVersion()
-                    .withResult()
+//                    .withResult()
                     .send()
                     .join();
 
@@ -142,19 +153,19 @@ public class Main implements CommandLineRunner {
         return end;
     }
 
-    private String formatDuration(String start, String end) {
-        Instant startTime = Instant.parse(start);
-        Instant endTime = Instant.parse(end);
-
-        long millis = startTime.toEpochMilli() - endTime.toEpochMilli();
-
-        double secondsWithMillis = millis / 1000.0;
-
-        // Optional: nur 3 Nachkommastellen
-        return String.format("%.3f s", secondsWithMillis);
-    }
-
-//    private static long getMicros(Instant time) {
-//        return time.getEpochSecond() * 1_000_000L + time.getNano() / 1_000;
+//    private String formatDuration(String start, String end) {
+//        Instant startTime = Instant.parse(start);
+//        Instant endTime = Instant.parse(end);
+//
+//        long millis = startTime.toEpochMilli() - endTime.toEpochMilli();
+//
+//        double secondsWithMillis = millis / 1000.0;
+//
+//        // Optional: nur 3 Nachkommastellen
+//        return String.format("%.3f s", secondsWithMillis);
 //    }
+
+    private static long getMicros(Instant time) {
+        return time.getEpochSecond() * 1_000_000L + time.getNano() / 1_000;
+    }
 }
