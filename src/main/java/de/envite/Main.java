@@ -126,7 +126,7 @@ public class Main implements CommandLineRunner {
 //                    .withResult()
                     .send()
                     .join();
-                    Thread.sleep(5)
+//                    Thread.sleep(5);
 
             if(i==amountProcessInstances){
                 LOG_EVENT.info("All {} process instances started", amountProcessInstances);
