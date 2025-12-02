@@ -138,61 +138,52 @@ public class Main implements CommandLineRunner {
 //        }
 //    }
 
-    private void startInstance(String processId) throws InterruptedException {
-        final int maxRetries = 5;
+private void startInstance(String processId) throws InterruptedException {
+    final long baseBackoffMillis = 100L;      // Start: 100 ms
+    final long maxBackoffMillis  = 30_000L;   // max: 30 s zwischen Versuchen
 
-        // exponentieller Backoff: 100ms, 200ms, 400ms, 800ms, ... bis maxBackoffMillis
-        final long baseBackoffMillis = 100L;
-        final long maxBackoffMillis = 5_000L;
+    LOG_EVENT.info("Starten der Prozessinstanzen");
 
-        for (int i = 1; i <= amountProcessInstances; i++) {
+    for (int i = 1; i <= amountProcessInstances; i++) {
 
-            boolean started = false;
-            int attempt = 0;
+        boolean started = false;
+        long backoffMillis = baseBackoffMillis;
 
-            while (!started && attempt < maxRetries) {
-                attempt++;
+        while (!started) {
+            try {
+                client.newCreateInstanceCommand()
+                        .bpmnProcessId(processId)
+                        .latestVersion()
+                        .send()
+                        .join();
 
-                try {
-                    client.newCreateInstanceCommand()
-                            .bpmnProcessId(processId)
-                            .latestVersion()
-                            .send()
-                            .join();
+                started = true;  // Instanz erfolgreich gestartet
 
-                    started = true;
+                // optional minimaler "Schongang" für den Broker
+                // Thread.sleep(1);
 
-                } catch (ClientStatusException e) {
-                    if (isResourceExhausted(e) && attempt < maxRetries) {
-                        long backoffMillis =
-                                Math.min(baseBackoffMillis * (1L << (attempt - 1)), maxBackoffMillis);
+            } catch (ClientStatusException e) {
+                if (isResourceExhausted(e)) {
+                    LOG_EVENT.warn(
+                            "Backpressure (RESOURCE_EXHAUSTED) beim Start von Instanz {}. " +
+                                    "Warte {} ms und versuche erneut.",
+                            i, backoffMillis
+                    );
 
-                        LOG_EVENT.warn(
-                                "Backpressure (RESOURCE_EXHAUSTED) beim Start von Instanz {} " +
-                                        "(Versuch {}/{}). Warte {} ms und versuche erneut.",
-                                i, attempt, maxRetries, backoffMillis
-                        );
-                        Thread.sleep(backoffMillis);
+                    Thread.sleep(backoffMillis);
+                    backoffMillis = Math.min(backoffMillis * 2, maxBackoffMillis);
 
-                    } else {
-                        // kein Backpressure oder maxRetries erreicht → Fehler weiterwerfen
-                        throw e;
-                    }
+                } else {
+                    // andere Fehler (z.B. falsche Process-ID etc.) -> Programm soll wirklich abbrechen
+                    throw e;
                 }
             }
-
-            if (!started) {
-                LOG_EVENT.error(
-                        "Instanz {} konnte nach {} Versuchen nicht gestartet werden.",
-                        i, maxRetries
-                );
-                // je nach Szenario: hier könntest du auch `break;` setzen,
-                // wenn du beim ersten Fehler abbrechen willst
-            }
         }
-
-        LOG_EVENT.info("Start von {} Prozessinstanzen angefordert.", amountProcessInstances);
     }
+
+    LOG_EVENT.info("All {} process instances started", amountProcessInstances);
+}
+
 
     private String getStartTime(String processId){
         var response = client.newProcessInstanceSearchRequest().filter((f) -> f.processDefinitionId(processId))
@@ -214,22 +205,14 @@ public class Main implements CommandLineRunner {
         return end;
     }
 
-    private boolean isResourceExhausted(Throwable t) {
-        Throwable cause = t;
-        while (cause != null) {
-            if (cause instanceof StatusRuntimeException sre) {
-                Status.Code code = sre.getStatus().getCode();
-                if (code == Status.RESOURCE_EXHAUSTED.getCode()) {
-                    return true;
-                }
-            }
-            String msg = cause.getMessage();
-            if (msg != null && msg.contains("RESOURCE_EXHAUSTED")) {
-                return true;
-            }
-            cause = cause.getCause();
+    private boolean isResourceExhausted(ClientStatusException e) {
+        // falls du die neue camunda-client API hast:
+        try {
+            return e.getStatusCode() == Status.Code.RESOURCE_EXHAUSTED;
+        } catch (NoSuchMethodError ignored) {
+            // Fallback auf Message-Check, falls getStatusCode() nicht existiert
+            return e.getMessage() != null && e.getMessage().contains("RESOURCE_EXHAUSTED");
         }
-        return false;
     }
 //    private String formatDuration(String start, String end) {
 //        Instant startTime = Instant.parse(start);
