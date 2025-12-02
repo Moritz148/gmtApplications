@@ -1,11 +1,8 @@
 package de.envite;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.response.Topology;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -121,69 +118,21 @@ public class Main implements CommandLineRunner {
         LOG_EVENT.info("Deployed BPMN {}", classpath);
     }
 
-//    private void startInstance(String processId) throws InterruptedException {
-//        LOG_EVENT.info("Starten der Prozessinstanzen");
-//        for (int i = 1; i <= amountProcessInstances; i++) {
-//            client.newCreateInstanceCommand()
-//                    .bpmnProcessId(processId)
-//                    .latestVersion()
-////                    .withResult()
-//                    .send()
-//                    .join();
-////                    Thread.sleep(5);
-//
-//            if(i==amountProcessInstances){
-//                LOG_EVENT.info("All {} process instances started", amountProcessInstances);
-//            }
-//        }
-//    }
+    private void startInstance(String processId) throws InterruptedException {
+        for (int i = 1; i <= amountProcessInstances; i++) {
+            client.newCreateInstanceCommand()
+                    .bpmnProcessId(processId)
+                    .latestVersion()
+//                    .withResult()
+                    .send()
+                    .join();
+                    Thread.sleep(5);
 
-private void startInstance(String processId) throws InterruptedException {
-    final long baseBackoffMillis = 100L;      // Start: 100 ms
-    final long maxBackoffMillis  = 30_000L;   // max: 30 s zwischen Versuchen
-
-    LOG_EVENT.info("Starten der Prozessinstanzen");
-
-    for (int i = 1; i <= amountProcessInstances; i++) {
-
-        boolean started = false;
-        long backoffMillis = baseBackoffMillis;
-
-        while (!started) {
-            try {
-                client.newCreateInstanceCommand()
-                        .bpmnProcessId(processId)
-                        .latestVersion()
-                        .send()
-                        .join();
-
-                started = true;  // Instanz erfolgreich gestartet
-
-                // optional minimaler "Schongang" für den Broker
-                // Thread.sleep(1);
-
-            } catch (ClientStatusException e) {
-                if (isResourceExhausted(e)) {
-                    LOG_EVENT.warn(
-                            "Backpressure (RESOURCE_EXHAUSTED) beim Start von Instanz {}. " +
-                                    "Warte {} ms und versuche erneut.",
-                            i, backoffMillis
-                    );
-
-                    Thread.sleep(backoffMillis);
-                    backoffMillis = Math.min(backoffMillis * 2, maxBackoffMillis);
-
-                } else {
-                    // andere Fehler (z.B. falsche Process-ID etc.) -> Programm soll wirklich abbrechen
-                    throw e;
-                }
+            if(i==amountProcessInstances){
+                LOG_EVENT.info("All {} process instances started", amountProcessInstances);
             }
         }
     }
-
-    LOG_EVENT.info("All {} process instances started", amountProcessInstances);
-}
-
 
     private String getStartTime(String processId){
         var response = client.newProcessInstanceSearchRequest().filter((f) -> f.processDefinitionId(processId))
@@ -191,8 +140,7 @@ private void startInstance(String processId) throws InterruptedException {
                         .sort(s -> s.startDate().asc())
                         .send();
         var result = response.join();
-        String start = String.valueOf(result.singleItem().getStartDate());
-        return start;
+        return String.valueOf(result.singleItem().getStartDate());
     }
 
     private String getEndTime(String processId){
@@ -201,19 +149,9 @@ private void startInstance(String processId) throws InterruptedException {
                 .sort(s -> s.startDate().desc())
                 .send();
         var result = response.join();
-        String end = String.valueOf(result.singleItem().getEndDate());
-        return end;
+        return String.valueOf(result.singleItem().getEndDate());
     }
 
-    private boolean isResourceExhausted(ClientStatusException e) {
-        // falls du die neue camunda-client API hast:
-        try {
-            return e.getStatusCode() == Status.Code.RESOURCE_EXHAUSTED;
-        } catch (NoSuchMethodError ignored) {
-            // Fallback auf Message-Check, falls getStatusCode() nicht existiert
-            return e.getMessage() != null && e.getMessage().contains("RESOURCE_EXHAUSTED");
-        }
-    }
 //    private String formatDuration(String start, String end) {
 //        Instant startTime = Instant.parse(start);
 //        Instant endTime = Instant.parse(end);
